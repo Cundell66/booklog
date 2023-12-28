@@ -1,4 +1,5 @@
 import os
+import csv
 import markdown
 import codecs
 from flask import Flask, render_template, request, redirect
@@ -79,7 +80,7 @@ def add():
         request.form.get("title"),
         request.form.get("subtitle"),
         request.form.get("year"),
-        request.form.getlist("authors"),
+        request.form.get("authors"),
         request.form.get("cover"),
         request.form.get("description"),
         request.form.get("isbn"),
@@ -111,3 +112,34 @@ def rebuild():
 @app.route("/import", methods=["GET"])
 def load():
     return render_template("/import.html")
+
+@app.route("/import", methods=["POST"])
+def importcsv():
+    filename = request.form.get("file")
+    with open(filename, "r") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            isbn = row["isbn"]
+            GBooksURL = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
+            response = requests.get(GBooksURL).json()
+            book = response["items"][0]["volumeInfo"]
+            try:
+                cover = book["imageLinks"]["thumbnail"]
+            except KeyError:
+                cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
+            except ValueError:
+                cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
+            except Exception as e:
+                print(e)
+            
+            db.execute(
+                "INSERT INTO books (title, subtitle, year, authors, cover, description, isbn) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                row["title"],
+                row["subtitle"],
+                row["year"],
+                row["authors"],
+                cover,
+                row["description"],
+                row["isbn"]
+            )
+    return redirect("/collection")
