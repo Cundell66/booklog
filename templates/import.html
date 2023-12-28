@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    IMPORT
+{% endblock %}
+{% block main %}
+    <h1> IMPORT </h1>
+    <h2> Select path to CSV to import</h2>
+    <form action="/import" method="post">
+        <input autocomplete="off" autofocus placeholder="ISBN" type="text" name="isbn">
+        <button type="submit">Search</button>
+    </form>
+{% endblock %}

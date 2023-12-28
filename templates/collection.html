@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+{% block main %}
+    <h1>{{ title }}</h1>
+        <table class="table table-bordered border-primary" style="width: 70%; margin-left: auto; margin-right: auto;">
+            {% for book in books %}
+            <tr>
+                <td style="width:10%;">
+                    <img src={{ book.cover }} style="height: 200px;"/>
+                </td>
+                <td style="width: 30%;">
+                    {{ book.title }} <br>
+                    {{ book.subtitle }} <br>
+                    {{ book.description }} <br>
+                </td>
+                <td style="width:20%;">    
+                    {{ book.authors }} <br>
+                    {{ book.year }} <br>
+                    {{ book.isbn }} <br>
+                </td>
+                <td style="width: 10%;">
+                    <form action="/delete" method="post">
+                        <input name="id" type="hidden" value="{{ book.book_id }}">
+                        <button type="submit">DELETE</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+{% endblock %}

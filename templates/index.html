@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {{ title }}
+{% endblock %}
+{% block main %}
+    {%for book in books%}
+        <h1>{{ book.title }}</h1>
+        <h2>{{book.subtitle}}</h2>
+        <h3>
+            {{book.authors}},
+            {{ book.isbn }}
+        </h3>
+        <img class="small_image" src={{ book.cover }} />
+    {% endfor %}
+    <h2> Search for new book </h2>
+    <form action="/" method="post">
+        <input autocomplete="off" autofocus placeholder="ISBN" type="text" name="isbn">
+        <button type="submit">Search</button>
+    </form>
+{% endblock %}
+
