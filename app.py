@@ -171,3 +171,17 @@ def importcsv():
                     isbn
                 )
     return redirect("/collection")
+
+@app.route("/author", methods=["POST"])
+def author():
+    author = request.form.get("authors")
+    books = db.execute("SELECT * FROM books WHERE authors = ? ORDER BY title", author)
+    return render_template("collection.html", books=books, title=f"{author}  Collection")
+
+@app.route("/title", methods=["POST"])
+def title():
+    title = request.form.get("q")
+    books = db.execute("SELECT * FROM books WHERE title LIKE ?", "%" + title + "%")
+    headline = f"titles containing {title}"
+    return render_template("collection.html", books=books, title=headline)
+
