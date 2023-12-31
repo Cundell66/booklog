@@ -1,7 +1,7 @@
-import os
+# import os
 import csv
-import markdown
-import codecs
+# import markdown
+# import codecs
 from flask import Flask, render_template, request, redirect
 from cs50 import SQL
 import requests

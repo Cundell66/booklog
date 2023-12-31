@@ -1,0 +1,4 @@
+csv
+flask
+cs50
+requests
