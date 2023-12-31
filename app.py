@@ -62,6 +62,7 @@ def find():
 
     try:
         year = book["publishedDate"]
+        print(year)
     except KeyError:
         year = ""
     except Exception as e:
@@ -123,6 +124,8 @@ def load():
 def importcsv():
     def get_field(row, book, field, default):
         try:
+            if field == "year":
+                return row[field] if row[field] else book["publishedDate"]
             return row[field] if row[field] else book[field]
         except KeyError:
             return default
