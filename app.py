@@ -13,9 +13,14 @@ db = SQL("sqlite:///booklog.db")
 
 @app.route("/", methods=["GET"])
 def home():
+    # book = db.execute("SELECT * FROM books ORDER BY random() LIMIT 1")
+    # return render_template("index.html", books=book)
+    return redirect("/collection")
+
+@app.route("/random", methods=["GET"])
+def random():
     book = db.execute("SELECT * FROM books ORDER BY random() LIMIT 1")
     return render_template("index.html", books=book)
-
 
 @app.route("/", methods=["POST"])
 def find():
