@@ -1,8 +1,9 @@
-# import os
+import os
 import csv
 # import markdown
 # import codecs
-from flask import Flask, render_template, request, redirect
+from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, redirect, url_for
 from cs50 import SQL
 import requests
 
@@ -125,38 +126,48 @@ def importcsv():
             return row[field] if row[field] else book[field]
         except KeyError:
             return default
+    upload_dir = 'uploads'
+    os.makedirs(upload_dir, exist_ok=True)
         
-    filename = request.form.get("file")
-    with open(filename, "r") as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            isbn = row["isbn"]
-            GBooksURL = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
-            response = requests.get(GBooksURL).json()
-            book = response["items"][0]["volumeInfo"]
-            try:
-                cover = book["imageLinks"]["thumbnail"]
-            except KeyError:
-                cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
-            except ValueError:
-                cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
-            except Exception as e:
-                print(e)
+    if 'file' not in request.files:
+        return 'No file part'
+    file = request.files['file']
+    if file.filename == '':
+        return 'No selected file'
+    if file:
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(upload_dir, filename))
+        # Now you can open and read the file:
+        with open(os.path.join(upload_dir, filename), 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                isbn = row["isbn"]
+                GBooksURL = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
+                response = requests.get(GBooksURL).json()
+                book = response["items"][0]["volumeInfo"]
+                try:
+                    cover = book["imageLinks"]["thumbnail"]
+                except KeyError:
+                    cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
+                except ValueError:
+                    cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
+                except Exception as e:
+                    print(e)
             
-            title = get_field(row, book, "title", "")
-            subtitle = get_field(row, book, "subtitle", "")
-            year = get_field(row, book, "year", "")
-            authors = get_field(row, book, "authors", "")
-            description = get_field(row, book, "description", "")
+                title = get_field(row, book, "title", "")
+                subtitle = get_field(row, book, "subtitle", "")
+                year = get_field(row, book, "year", "")
+                authors = get_field(row, book, "authors", "")
+                description = get_field(row, book, "description", "")
 
-            db.execute(
-                "INSERT INTO books (title, subtitle, year, authors, cover, description, isbn) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                title,
-                subtitle,
-                year,
-                authors,
-                cover,
-                description,
-                isbn
-            )
+                db.execute(
+                    "INSERT INTO books (title, subtitle, year, authors, cover, description, isbn) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    title,
+                    subtitle,
+                    year,
+                    authors,
+                    cover,
+                    description,
+                    isbn
+                )
     return redirect("/collection")

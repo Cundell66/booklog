@@ -6,7 +6,7 @@
 {% block main %}
     <h1> IMPORT </h1>
     <h2> Select path to CSV to import</h2>
-    <form action="/import" method="post">
+    <form action="/import" method="post" enctype="multipart/form-data">
         <input autocomplete="off" autofocus type="file" name="file">
         <button type="submit">Submit</button>
     </form>
