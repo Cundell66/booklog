@@ -120,6 +120,12 @@ def load():
 
 @app.route("/import", methods=["POST"])
 def importcsv():
+    def get_field(row, book, field, default):
+        try:
+            return row[field] if row[field] else book[field]
+        except KeyError:
+            return default
+        
     filename = request.form.get("file")
     with open(filename, "r") as file:
         reader = csv.DictReader(file)
@@ -137,14 +143,20 @@ def importcsv():
             except Exception as e:
                 print(e)
             
+            title = get_field(row, book, "title", "")
+            subtitle = get_field(row, book, "subtitle", "")
+            year = get_field(row, book, "year", "")
+            authors = get_field(row, book, "authors", "")
+            description = get_field(row, book, "description", "")
+
             db.execute(
                 "INSERT INTO books (title, subtitle, year, authors, cover, description, isbn) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                row["title"],
-                row["subtitle"],
-                row["year"],
-                row["authors"],
+                title,
+                subtitle,
+                year,
+                authors,
                 cover,
-                row["description"],
-                row["isbn"]
+                description,
+                isbn
             )
     return redirect("/collection")
