@@ -117,7 +117,7 @@ def add():
 @app.route("/collection", methods=["GET"])
 def collection():
     response = requests.get('https://viral.cundell.com/booklog.db')
-    with tempfile.TemporaryFile() as temp_db:
+    with tempfile.NamedTemporaryFile() as temp_db:
         print("temp db path: ", temp_db.name)
         temp_db.write(response.content)
         temp_db.seek(0) # Rewind to the beginning of the file
