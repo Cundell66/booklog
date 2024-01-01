@@ -1,6 +1,6 @@
 import os
 import csv
-# import markdown
+import tempfile
 # import codecs
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for
@@ -9,7 +9,16 @@ import requests
 
 app = Flask(__name__)
 
-db = SQL("sqlite:///booklog.db")
+# db = SQL("sqlite:///booklog.db")
+
+@app.route('/get_remote_db')
+def get_remote_db():
+    response = requests.get('https://viral.cundell.com/booklog.db')
+    with tempfile.TemporaryFile() as temp_db:
+        temp_db.write(response.content)
+        temp_db.seek(0) # Rewind to the beginning of the file
+        return SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+
 
 
 @app.route("/", methods=["GET"])
@@ -20,7 +29,12 @@ def home():
 
 @app.route("/random", methods=["GET"])
 def random():
-    book = db.execute("SELECT * FROM books ORDER BY random() LIMIT 1")
+    response = requests.get('https://viral.cundell.com/booklog.db')
+    with tempfile.TemporaryFile() as temp_db:
+        temp_db.write(response.content)
+        temp_db.seek(0) # Rewind to the beginning of the file
+        db = SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+        book = db.execute("SELECT * FROM books ORDER BY random() LIMIT 1")
     return render_template("index.html", books=book)
 
 @app.route("/", methods=["POST"])
@@ -82,39 +96,60 @@ def find():
 
 @app.route("/add", methods=["POST"])
 def add():
-    db.execute(
+    response = requests.get('https://viral.cundell.com/booklog.db')
+    with tempfile.TemporaryFile() as temp_db:
+        temp_db.write(response.content)
+        temp_db.seek(0) # Rewind to the beginning of the file
+        db = SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+        db.execute(
         "INSERT INTO books (title, subtitle, year, authors, cover, description, isbn) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        request.form.get("title"),
-        request.form.get("subtitle"),
-        request.form.get("year"),
-        request.form.get("authors"),
-        request.form.get("cover"),
-        request.form.get("description"),
-        request.form.get("isbn"),
-    )
+            request.form.get("title"),
+            request.form.get("subtitle"),
+            request.form.get("year"),
+            request.form.get("authors"),
+            request.form.get("cover"),
+            request.form.get("description"),
+            request.form.get("isbn"),
+        )
     return redirect("/collection")
 
 
 @app.route("/collection", methods=["GET"])
 def collection():
-    books = db.execute("SELECT * FROM books ORDER BY title")
+    response = requests.get('https://viral.cundell.com/booklog.db')
+    with tempfile.TemporaryFile() as temp_db:
+        print("temp db path: ", temp_db.name)
+        temp_db.write(response.content)
+        temp_db.seek(0) # Rewind to the beginning of the file
+        db = SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+        books = db.execute("SELECT * FROM books ORDER BY title")
     return render_template("collection.html", books=books, title="Full Collection")
 
 
 @app.route("/delete", methods=["POST"])
 def delete():
-    id = request.form.get("id")
-    db.execute("DELETE FROM books WHERE book_id = ?", id)
+    response = requests.get('https://viral.cundell.com/booklog.db')
+    with tempfile.TemporaryFile() as temp_db:
+        temp_db.write(response.content)
+        temp_db.seek(0) # Rewind to the beginning of the file
+        db = SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+        id = request.form.get("id")
+        db.execute("DELETE FROM books WHERE book_id = ?", id)
     return redirect("/collection")
 
 @app.route("/erase", methods=["GET"])
 def rebuild():
-    try:
-        db.execute("DELETE FROM books")
-        db.execute("DELETE FROM sqlite_sequence WHERE name = 'books'")
-        return redirect("/collection")
-    except Exception as e:
-        return str(e)
+    response = requests.get('https://viral.cundell.com/booklog.db')
+    with tempfile.TemporaryFile() as temp_db:
+        temp_db.write(response.content)
+        temp_db.seek(0) # Rewind to the beginning of the file
+        db = SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+        try:
+            db.execute("DELETE FROM books")
+            db.execute("DELETE FROM sqlite_sequence WHERE name = 'books'")
+            return redirect("/collection")
+        except Exception as e:
+            return str(e)
 
 @app.route("/import", methods=["GET"])
 def load():
@@ -162,8 +197,12 @@ def importcsv():
                 year = get_field(row, book, "year", "")
                 authors = get_field(row, book, "authors", "")
                 description = get_field(row, book, "description", "")
-
-                db.execute(
+                response = requests.get('https://viral.cundell.com/booklog.db')
+                with tempfile.TemporaryFile() as temp_db:
+                    temp_db.write(response.content)
+                    temp_db.seek(0) # Rewind to the beginning of the file
+                    db = SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+                    db.execute(
                     "INSERT INTO books (title, subtitle, year, authors, cover, description, isbn) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     title,
                     subtitle,
@@ -178,13 +217,23 @@ def importcsv():
 @app.route("/author", methods=["POST"])
 def author():
     author = request.form.get("authors")
-    books = db.execute("SELECT * FROM books WHERE authors = ? ORDER BY title", author)
+    response = requests.get('https://viral.cundell.com/booklog.db')
+    with tempfile.TemporaryFile() as temp_db:
+        temp_db.write(response.content)
+        temp_db.seek(0) # Rewind to the beginning of the file
+        db = SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+        books = db.execute("SELECT * FROM books WHERE authors = ? ORDER BY title", author)
     return render_template("collection.html", books=books, title=f"{author}  Collection")
 
 @app.route("/title", methods=["POST"])
 def title():
     title = request.form.get("q")
-    books = db.execute("SELECT * FROM books WHERE title LIKE ?", "%" + title + "%")
+    response = requests.get('https://viral.cundell.com/booklog.db')
+    with tempfile.TemporaryFile() as temp_db:
+        temp_db.write(response.content)
+        temp_db.seek(0) # Rewind to the beginning of the file
+        db = SQL("sqlite:///{}".format(temp_db.name)) # connect to temporary db
+        books = db.execute("SELECT * FROM books WHERE title LIKE ?", "%" + title + "%")
     headline = f"titles containing {title}"
     return render_template("collection.html", books=books, title=headline)
 
