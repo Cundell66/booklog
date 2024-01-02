@@ -1,5 +1,5 @@
-title,subtitle,year,authors,cover,description,isbn
-Little women,"Meg, Jo, Beth, and Amy",2004,Louisa May Alcott,,,9780393976144
-Moby Dick,,2010,Herman Melville,,,9781617864124
-Grant,,,,,,9780143110637
-,,,,,,9780394537603
+title,subtitle,year,authors,cover,pageCount,description,isbn
+Little women,"Meg, Jo, Beth, and Amy",2004,Louisa May Alcott,,,,9780393976144
+Moby Dick,,2010,Herman Melville,,,,9781617864124
+Grant,,,,,,,9780143110637
+,,,,,,,9780394537603

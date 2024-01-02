@@ -1,11 +1,11 @@
 import os
 import csv
 from pymongo_get_database import get_database
-from pandas import DataFrame
+from bson.objectid import ObjectId
 # import markdown
 # import codecs
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect
 # from cs50 import SQL
 import requests
 
@@ -36,7 +36,7 @@ def find():
         subtitle = ""
     except Exception as e:
         print(e)
-
+# items[0].volumeInfo.pageCount
     try:
         authors = book["authors"]
     except KeyError:
@@ -50,6 +50,14 @@ def find():
         cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
     except ValueError:
         cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
+    except Exception as e:
+        print(e)
+
+    try:
+        pageCount = book["pageCount"]
+        print ("pageCount")
+    except KeyError:
+        pageCount = ""
     except Exception as e:
         print(e)
 
@@ -75,6 +83,7 @@ def find():
         cover=cover,
         year=year[:4],
         authors=authors,
+        pageCount = pageCount,
         isbn=isbn,
         description=description[:200],
     )
@@ -89,7 +98,7 @@ def add():
        "author" :request.form.get("authors"),
         "cover":request.form.get("cover"),
         "description":request.form.get("description"),
-        "pages":request.form.get("pages"),
+        "pageCount":request.form.get("pageCount"),
         "isbn":request.form.get("isbn"),
     })
     return redirect("/collection")
@@ -97,6 +106,8 @@ def add():
 
 @app.route("/collection", methods=["GET"])
 def collection():
+    count = db.estimated_document_count(None)
+    print(count)
     books = db.find()
     return render_template("collection.html", books=books, title="Full Collection")
 
@@ -104,9 +115,11 @@ def collection():
 @app.route("/delete", methods=["POST"])
 def delete():
     id = request.form.get("id")
-    # id = f"ObjectId('{id}')"
-    print (id)
-    db.delete_many({"isbn":id})
+    document_to_delete = {"_id": ObjectId(id)}
+    try :
+        db.delete_one(document_to_delete)
+    except Exception as e:
+        print (e)
     return redirect("/collection")
 
 # @app.route("/erase", methods=["GET"])
@@ -126,8 +139,10 @@ def load():
 def importcsv():
     def get_field(row, book, field, default):
         try:
+            if field == "authors":
+                return row[field] if row[field] else book["authors"][0]
             if field == "year":
-                return row[field] if row[field] else book["publishedDate"]
+                return row[field] if row[field] else book["publishedDate"][:4]
             return row[field] if row[field] else book[field]
         except KeyError:
             return default
@@ -148,6 +163,7 @@ def importcsv():
             for row in reader:
                 isbn = row["isbn"]
                 GBooksURL = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
+                print("url: ", GBooksURL)
                 response = requests.get(GBooksURL).json()
                 book = response["items"][0]["volumeInfo"]
                 try:
@@ -163,24 +179,25 @@ def importcsv():
                 subtitle = get_field(row, book, "subtitle", "")
                 year = get_field(row, book, "year", "")
                 authors = get_field(row, book, "authors", "")
-                pagecount = get_field(row, book, "pagecount", "")
+                pageCount = get_field(row, book, "pageCount", "")
+                print(pageCount)
                 description = get_field(row, book, "description", "")
-
                 db.insert_one({
                     "title": title,
                     "subtitle": subtitle,
                     "year": year,
-                    "author": authors[0],
+                    "author": authors,
                     "cover": cover,
-                    "pages": pagecount,
+                    "pageCount": pageCount,
                     "description":description,
-                    "isbn": isbn
+                    "isbn": isbn,
                     })
     return redirect("/collection")
 
 @app.route("/author", methods=["POST"])
 def author():
     author = request.form.get("authors")
+    print(author)
     books = db.find({"author" : author})
     return render_template("collection.html", books=books, title=f"{author}  Collection")
 

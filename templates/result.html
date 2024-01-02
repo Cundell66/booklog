@@ -10,6 +10,7 @@
         <h3>
             {{ authors[0]}},
             {{ isbn }}
+            {{ pageCount }}
         </h3>
         <img class="small_image" src={{ cover }} />
             <form action="/add" method="post">
@@ -18,7 +19,8 @@
                 <input name="year" type="hidden" value="{{ year }}">
                 <input name="authors" type="hidden" value="{{ authors[0] }}">
                 <input name="isbn" type="hidden" value="{{ isbn }}">
-                <input name="description" type="hidden" value="{{ description }}">    
+                <input name="description" type="hidden" value="{{ description }}">
+                <input name="pageCount" type="hidden" value="{{pageCount}}">
                 <input name="cover" type="hidden" value="{{ cover }}">
                 <button type="submit">add this book</button>
             </form>

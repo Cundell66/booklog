@@ -18,21 +18,21 @@
                 <td style="width: 30%;">
                     {{ book['title'] }} <br>
                     {{ book['subtitle'] }} <br>
-                    {{ book['description'] }} <br>
+                    {{ book['description'][:200] }} <br>
                 </td>
                 <td style="width:20%;">
                     <form action="/author" method="post">    
-                        <input name="authors" type="hidden"  value="{{ book['authors'] }}">
+                        <input name="authors" type="hidden"  value="{{ book['author'] }}">
                         <button type="submit">{{ book['author'] }}</button>
                     </form>
-                    {{ book['year'] }} <br>
-                    {{ book['isbn'] }} <br>
-                    {{ book['pages']}} <br>
-                    {{ book['_id']}}<br>
+                    Year Published: {{ book['year'] }} <br>
+                    ISBN: {{ book['isbn'] }} <br>
+                    Pages: {{ book['pageCount']}} <br>
                 </td>
                 <td style="width: 10%;">
                     <form action="/delete" method="post">
-                        <input name="id" type="hidden" value="{{book['isbn']}}">
+                        <input name="id" type="hidden" value="{{book['_id']}}">
+                        <input name="title" type="hidden" value="{{book['title']}}">
                         <button type="submit">DELETE</button>
                     </form>
                 </td>
