@@ -104,10 +104,9 @@ def collection():
 @app.route("/delete", methods=["POST"])
 def delete():
     id = request.form.get("id")
-    id = f"ObjectId('{id}')"
+    # id = f"ObjectId('{id}')"
     print (id)
-    query = {"_id": id}
-    db.delete_one(query)
+    db.delete_many({"isbn":id})
     return redirect("/collection")
 
 # @app.route("/erase", methods=["GET"])
@@ -182,13 +181,13 @@ def importcsv():
 @app.route("/author", methods=["POST"])
 def author():
     author = request.form.get("authors")
-    books = db.find("author": author)
+    books = db.find({"author" : author})
     return render_template("collection.html", books=books, title=f"{author}  Collection")
 
-# @app.route("/title", methods=["POST"])
-# def title():
-#     title = request.form.get("q")
-#     books = db.execute("SELECT * FROM books WHERE title LIKE ?", "%" + title + "%")
-#     headline = f"titles containing {title}"
-#     return render_template("collection.html", books=books, title=headline)
+@app.route("/title", methods=["POST"])
+def title():
+    title = request.form.get("q")
+    books = db.find({"title":title})
+    headline = f"titles containing {title}"
+    return render_template("collection.html", books=books, title=headline)
 
