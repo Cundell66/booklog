@@ -4,5 +4,3 @@ requests
 pandas
 pymongo
 python-dotenv
-bson.objectid
-werkseug.utils
