@@ -1,27 +1,27 @@
 import os
 import csv
+from pymongo_get_database import get_database
+from pandas import DataFrame
 # import markdown
 # import codecs
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for
-from cs50 import SQL
+# from cs50 import SQL
 import requests
 
 app = Flask(__name__)
 
-db = SQL("sqlite:///booklog.db")
-
+dbname = get_database()
+db = dbname["books"]
 
 @app.route("/", methods=["GET"])
 def home():
-    # book = db.execute("SELECT * FROM books ORDER BY random() LIMIT 1")
-    # return render_template("index.html", books=book)
     return redirect("/collection")
 
-@app.route("/random", methods=["GET"])
-def random():
-    book = db.execute("SELECT * FROM books ORDER BY random() LIMIT 1")
-    return render_template("index.html", books=book)
+# @app.route("/random", methods=["GET"])
+# def random():
+#     book = db.execute("SELECT * FROM books ORDER BY random() LIMIT 1")
+#     return render_template("index.html", books=book)
 
 @app.route("/", methods=["POST"])
 def find():
@@ -82,39 +82,42 @@ def find():
 
 @app.route("/add", methods=["POST"])
 def add():
-    db.execute(
-        "INSERT INTO books (title, subtitle, year, authors, cover, description, isbn) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        request.form.get("title"),
-        request.form.get("subtitle"),
-        request.form.get("year"),
-        request.form.get("authors"),
-        request.form.get("cover"),
-        request.form.get("description"),
-        request.form.get("isbn"),
-    )
+    db.insert_one({
+        "title": request.form.get("title"),
+        "subtitle":request.form.get("subtitle"),
+       "year" :request.form.get("year"),
+       "author" :request.form.get("authors"),
+        "cover":request.form.get("cover"),
+        "description":request.form.get("description"),
+        "pages":request.form.get("pages"),
+        "isbn":request.form.get("isbn"),
+    })
     return redirect("/collection")
 
 
 @app.route("/collection", methods=["GET"])
 def collection():
-    books = db.execute("SELECT * FROM books ORDER BY title")
+    books = db.find()
     return render_template("collection.html", books=books, title="Full Collection")
 
 
 @app.route("/delete", methods=["POST"])
 def delete():
     id = request.form.get("id")
-    db.execute("DELETE FROM books WHERE book_id = ?", id)
+    id = f"ObjectId('{id}')"
+    print (id)
+    query = {"_id": id}
+    db.delete_one(query)
     return redirect("/collection")
 
-@app.route("/erase", methods=["GET"])
-def rebuild():
-    try:
-        db.execute("DELETE FROM books")
-        db.execute("DELETE FROM sqlite_sequence WHERE name = 'books'")
-        return redirect("/collection")
-    except Exception as e:
-        return str(e)
+# @app.route("/erase", methods=["GET"])
+# def rebuild():
+#     try:
+#         db.execute("DELETE FROM books")
+#         db.execute("DELETE FROM sqlite_sequence WHERE name = 'books'")
+#         return redirect("/collection")
+#     except Exception as e:
+#         return str(e)
 
 @app.route("/import", methods=["GET"])
 def load():
@@ -161,30 +164,31 @@ def importcsv():
                 subtitle = get_field(row, book, "subtitle", "")
                 year = get_field(row, book, "year", "")
                 authors = get_field(row, book, "authors", "")
+                pagecount = get_field(row, book, "pagecount", "")
                 description = get_field(row, book, "description", "")
 
-                db.execute(
-                    "INSERT INTO books (title, subtitle, year, authors, cover, description, isbn) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    title,
-                    subtitle,
-                    year,
-                    authors,
-                    cover,
-                    description,
-                    isbn
-                )
+                db.insert_one({
+                    "title": title,
+                    "subtitle": subtitle,
+                    "year": year,
+                    "author": authors[0],
+                    "cover": cover,
+                    "pages": pagecount,
+                    "description":description,
+                    "isbn": isbn
+                    })
     return redirect("/collection")
 
 @app.route("/author", methods=["POST"])
 def author():
     author = request.form.get("authors")
-    books = db.execute("SELECT * FROM books WHERE authors = ? ORDER BY title", author)
+    books = db.find("author": author)
     return render_template("collection.html", books=books, title=f"{author}  Collection")
 
-@app.route("/title", methods=["POST"])
-def title():
-    title = request.form.get("q")
-    books = db.execute("SELECT * FROM books WHERE title LIKE ?", "%" + title + "%")
-    headline = f"titles containing {title}"
-    return render_template("collection.html", books=books, title=headline)
+# @app.route("/title", methods=["POST"])
+# def title():
+#     title = request.form.get("q")
+#     books = db.execute("SELECT * FROM books WHERE title LIKE ?", "%" + title + "%")
+#     headline = f"titles containing {title}"
+#     return render_template("collection.html", books=books, title=headline)
 
