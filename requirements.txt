@@ -4,4 +4,3 @@ requests
 pandas
 pymongo
 python-dotenv
-werkseug.utils
