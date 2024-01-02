@@ -29,7 +29,7 @@ def find():
     GBooksURL = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
     response = requests.get(GBooksURL).json()
     book = response["items"][0]["volumeInfo"]
-    title = book["title"]
+    title = book["title"].title()
     try:
         subtitle = book["subtitle"]
     except KeyError:
@@ -175,7 +175,7 @@ def importcsv():
                 except Exception as e:
                     print(e)
             
-                title = get_field(row, book, "title", "")
+                title = get_field(row, book, "title", "").title()
                 subtitle = get_field(row, book, "subtitle", "")
                 year = get_field(row, book, "year", "")
                 authors = get_field(row, book, "authors", "")
@@ -203,8 +203,8 @@ def author():
 
 @app.route("/title", methods=["POST"])
 def title():
-    title = request.form.get("q")
-    books = db.find({"title":title})
+    title = request.form.get("q").lower()
+    books = db.find({"title": {'$regex': title, '$options': 'i'}})
     headline = f"titles containing {title}"
     return render_template("collection.html", books=books, title=headline)
 
