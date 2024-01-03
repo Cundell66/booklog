@@ -10,6 +10,28 @@
             <button type="submit">Search</button>
         </form>
         <table class="table table-bordered border-primary" style="width: 70%; margin-left: auto; margin-right: auto;">
+            <tr>
+                <td style="width:10%;">
+                    <form action="/year" method="get">
+                        <button type="submit">Sort By Year</button>
+                    </form>
+                </td>
+                <td style="width: 30%;">
+                    <form action="/titlesort" method="get">
+                        <button type="submit">Sort By Title</button>
+                    </form>
+                </td>
+                <td style="width:20%;">
+                    <form action="/authorsort" method="get">
+                        <button type="submit">Sort By Author</button>
+                    </form>
+                </td>
+                <td style="width: 10%;">
+                    <form action="/pagecount" method="get">
+                        <button type="submit">Sort By Pages</button>
+                    </form>
+                </td>
+            </tr>
             {% for book in books %}
             <tr>
                 <td style="width:10%;">

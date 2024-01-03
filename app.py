@@ -2,7 +2,7 @@ import os
 import csv
 from pymongo_get_database import get_database
 from bson.objectid import ObjectId
-# import markdown
+import random
 # import codecs
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect
@@ -18,10 +18,13 @@ db = dbname["books"]
 def home():
     return redirect("/collection")
 
-# @app.route("/random", methods=["GET"])
-# def random():
-#     book = db.execute("SELECT * FROM books ORDER BY random() LIMIT 1")
-#     return render_template("index.html", books=book)
+@app.route("/random", methods=["GET"])
+def randombook():
+   count = db.estimated_document_count()-1
+   number = random.randint(0, count)
+   print(number)
+   book = db.find().skip(number).limit(1)
+   return render_template("collection.html", books=book, title="Random Selection")
 
 @app.route("/", methods=["POST"])
 def find():
@@ -36,7 +39,7 @@ def find():
         subtitle = ""
     except Exception as e:
         print(e)
-# items[0].volumeInfo.pageCount
+
     try:
         authors = book["authors"]
     except KeyError:
@@ -121,6 +124,26 @@ def delete():
     except Exception as e:
         print (e)
     return redirect("/collection")
+
+@app.route("/year", methods=["GET"])
+def year():
+    book = db.find().sort({ 'year': 1})
+    return render_template("/collection.html", books = book, title = "sorted by year")
+
+@app.route("/titlesort", methods=["GET"])
+def titlesort():
+    book = db.find().sort({ 'title': 1})
+    return render_template("/collection.html", books = book, title = "sorted by title")
+
+@app.route("/authorsort", methods=["GET"])
+def authorsort():
+    book = db.find().sort({ 'author': 1})
+    return render_template("/collection.html", books = book, title = "sorted by author")
+
+@app.route("/pagecount", methods=["GET"])
+def pagecount():
+    book = db.find().sort({ 'pageCount': 1})
+    return render_template("/collection.html", books = book, title = "Sorted By Page Count")
 
 # @app.route("/erase", methods=["GET"])
 # def rebuild():
