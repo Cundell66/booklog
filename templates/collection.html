@@ -12,18 +12,23 @@
         <table class="table table-bordered border-primary" style="width: 70%; margin-left: auto; margin-right: auto;">
             <tr>
                 <td style="width:10%;">
-                    <form action="/year" method="get">
-                        <button type="submit">Sort By Year</button>
+                    <form action="/colour" method="get">
+                        <button type="submit">Sort By Colour</button>
                     </form>
                 </td>
-                <td style="width: 30%;">
+                <td style="width: 15%;">
                     <form action="/titlesort" method="get">
                         <button type="submit">Sort By Title</button>
                     </form>
                 </td>
-                <td style="width:20%;">
+                <td style="width: 15%;">
                     <form action="/authorsort" method="get">
                         <button type="submit">Sort By Author</button>
+                    </form>
+                </td>
+                <td style="width:20%;">
+                    <form action="/year" method="get">
+                        <button type="submit">Sort By Year</button>
                     </form>
                 </td>
                 <td style="width: 10%;">
@@ -37,7 +42,7 @@
                 <td style="width:10%;">
                     <img src={{ book['cover'] }} style="height: 200px;"/>
                 </td>
-                <td style="width: 30%;">
+                <td style="width: 30%;" colspan="2">
                     {{ book['title'] }} <br>
                     {{ book['subtitle'] }} <br>
                     {{ book['description'][:200] }} <br>

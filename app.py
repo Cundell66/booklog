@@ -3,7 +3,7 @@ import csv
 from pymongo_get_database import get_database
 from bson.objectid import ObjectId
 import random
-# import codecs
+from PIL import Image
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect
 # from cs50 import SQL
@@ -14,6 +14,57 @@ app = Flask(__name__)
 dbname = get_database()
 db = dbname["books"]
 
+def getColour(imageUrl):
+        r = requests.get(imageUrl)
+        with open("temp_image", "wb") as f:
+            f.write(r.content)
+        image = Image.open("temp_image")
+        width, height = image.size
+        pix = image.load()
+        red = 0
+        green = 0
+        blue = 0
+        start = 5
+        end = 10
+        area = pow((end - start),2)
+        for row in range(start, end):
+            for col in range(start, end):
+                r, g, b = pix[col, row]
+                red += r
+                green += g
+                blue += b
+        red = int(red/area)
+        green = int(green/area)
+        blue = int(blue/area)
+        rgb = (red, green, blue)
+        return rgb
+
+def colour_group(rgb_value):
+    """Allocates an RGB value to a colour group based on a predefined chart."""
+
+    color_chart = {
+        (0, 0, 0): "Black",
+        (255, 255, 255): "White",
+        (255, 0, 0): "Red",
+        (0, 255, 0): "Lime",
+        (0,0,255): "Blue",
+        (255,255,0): "Yellow",
+        (0,255,255): "Cyan",
+        (255,0,255): "Fuchsia",
+        (192,192,192): "Silver",
+        (128,128,128): "Grey",
+        (128,0,0): "Maroon",
+        (128,128,0): "Olive",
+        (0,128,0): "Green",
+        (128,0,128): "Purple",
+        (0,128,128): "Teal",
+        (0,0,128): "Navy",
+    }
+
+    closest_color = min(color_chart, key=lambda x: sum((a - b)**2 for a, b in zip(rgb_value, x)))
+    return color_chart[closest_color]
+
+    
 @app.route("/", methods=["GET"])
 def home():
     return redirect("/collection")
@@ -22,73 +73,99 @@ def home():
 def randombook():
    count = db.estimated_document_count()-1
    number = random.randint(0, count)
-   print(number)
    book = db.find().skip(number).limit(1)
    return render_template("collection.html", books=book, title="Random Selection")
 
 @app.route("/", methods=["POST"])
 def find():
-    isbn = request.form.get("isbn")
-    GBooksURL = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
-    response = requests.get(GBooksURL).json()
-    book = response["items"][0]["volumeInfo"]
-    title = book["title"].title()
-    try:
-        subtitle = book["subtitle"]
-    except KeyError:
-        subtitle = ""
-    except Exception as e:
-        print(e)
+        try:
+            isbn = request.form.get("isbn")
+            if len(isbn) not in (10, 13):
+                raise ValueError("Invalid ISBN length. Please enter 10 or 13 digits.")
+            if not isbn.isdigit():
+                raise ValueError("Invalid ISBN format. Please enter only digits.")
+        except ValueError as e:
+            return render_template("error.html", title = e)
+        except Exception as e:
+            return render_template("error.html", title = e)
+        
+        if len(isbn)==10:
+            isbn = f'978{isbn}'
+        GBooksURL = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
+        response = requests.get(GBooksURL).json()
+        book = response["items"][0]["volumeInfo"]
+        title = book["title"].title()
+        try:
+            subtitle = book["subtitle"]
+        except KeyError:
+            subtitle = ""
+        except Exception as e:
+            return render_template("error.html", title = e)
 
-    try:
-        authors = book["authors"]
-    except KeyError:
-        subtitle = ""
-    except Exception as e:
-        print(e)
+        try:
+            authors = book["authors"]
+        except KeyError:
+            subtitle = ""
+        except Exception as e:
+            return render_template("error.html", title = e)
 
-    try:
-        cover = book["imageLinks"]["thumbnail"]
-    except KeyError:
-        cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
-    except ValueError:
-        cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
-    except Exception as e:
-        print(e)
+        try:
+            cover = book["imageLinks"]["thumbnail"]
+        except KeyError:
+            cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
+        except ValueError:
+            cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
+        except Exception as e:
+            return render_template("error.html", title = e)
 
-    try:
-        pageCount = book["pageCount"]
-        print ("pageCount")
-    except KeyError:
-        pageCount = ""
-    except Exception as e:
-        print(e)
+        try:
+            rgb = getColour(cover)
+        except TypeError:
+            rgb = (128,0,0)
+        except Exception as e:
+            return render_template("error.html", title = e)
 
-    try:
-        description = book["description"]
-    except KeyError:
-        description = ""
-    except Exception as e:
-        print(e)
+        try:
+            colour = colour_group(rgb)
+        except ValueError:
+            colour = "Maroon"
+        except TypeError:
+            colour = "Maroon"
+        except Exception as e:
+            return render_template("error.html", title = e)
 
-    try:
-        year = book["publishedDate"]
-        print(year)
-    except KeyError:
-        year = ""
-    except Exception as e:
-        print(e)
+        try:
+            pageCount = book["pageCount"]
+        except KeyError:
+            pageCount = ""
+        except Exception as e:
+            return render_template("error.html", title = e)
 
-    return render_template(
-        "result.html",
-        title=title,
-        subtitle=subtitle,
-        cover=cover,
-        year=year[:4],
-        authors=authors,
-        pageCount = pageCount,
-        isbn=isbn,
-        description=description[:200],
+        try:
+            description = book["description"]
+        except KeyError:
+            description = ""
+        except Exception as e:
+            return render_template("error.html", title = e)
+
+        try:
+            year = book["publishedDate"]
+        except KeyError:
+            year = ""
+        except Exception as e:
+            return render_template("error.html", title = e)
+
+        return render_template(
+            "result.html",
+            title=title,
+            subtitle=subtitle,
+            cover=cover,
+            year=year[:4],
+            authors=authors,
+            colour=colour,
+            pageCount = pageCount,
+            isbn=isbn,
+            description=description[:200],
     )
 
 
@@ -101,6 +178,7 @@ def add():
        "author" :request.form.get("authors"),
         "cover":request.form.get("cover"),
         "description":request.form.get("description"),
+        "colour":request.form.get("colour"),
         "pageCount":request.form.get("pageCount"),
         "isbn":request.form.get("isbn"),
     })
@@ -109,8 +187,7 @@ def add():
 
 @app.route("/collection", methods=["GET"])
 def collection():
-    count = db.estimated_document_count(None)
-    print(count)
+    # count = db.estimated_document_count(None)
     books = db.find()
     return render_template("collection.html", books=books, title="Full Collection")
 
@@ -141,18 +218,22 @@ def authorsort():
     return render_template("/collection.html", books = book, title = "sorted by author")
 
 @app.route("/pagecount", methods=["GET"])
-def pagecount():
+def pagesort():
     book = db.find().sort({ 'pageCount': 1})
     return render_template("/collection.html", books = book, title = "Sorted By Page Count")
 
-# @app.route("/erase", methods=["GET"])
-# def rebuild():
-#     try:
-#         db.execute("DELETE FROM books")
-#         db.execute("DELETE FROM sqlite_sequence WHERE name = 'books'")
-#         return redirect("/collection")
-#     except Exception as e:
-#         return str(e)
+@app.route("/colour", methods=["GET"])
+def coloursort():
+    book = db.find().sort({ 'colour': 1})
+    return render_template("/collection.html", books = book, title = "Sorted By Colour")
+
+@app.route("/erase", methods=["GET"])
+def rebuild():
+    try:
+        db.drop()
+        return redirect("/collection")
+    except Exception as e:
+        return render_template("error.html", title = e)
 
 @app.route("/import", methods=["GET"])
 def load():
@@ -169,13 +250,15 @@ def importcsv():
             return row[field] if row[field] else book[field]
         except KeyError:
             return default
+        
+
     upload_dir = 'uploads'
     os.makedirs(upload_dir, exist_ok=True)
         
     if 'file' not in request.files:
         return 'No file part'
     file = request.files['file']
-    if file.filename == '':
+    if file.filename == "":
         return 'No selected file'
     if file:
         filename = secure_filename(file.filename)
@@ -186,7 +269,6 @@ def importcsv():
             for row in reader:
                 isbn = row["isbn"]
                 GBooksURL = f"https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}"
-                print("url: ", GBooksURL)
                 response = requests.get(GBooksURL).json()
                 book = response["items"][0]["volumeInfo"]
                 try:
@@ -196,14 +278,23 @@ def importcsv():
                 except ValueError:
                     cover = "https://books.google.co.uk/googlebooks/images/no_cover_thumb.gif"
                 except Exception as e:
-                    print(e)
-            
+                    return render_template("error.html", title = e)
+
+                try:
+                    rgb = getColour(cover)
+                except TypeError:
+                    rgb = (128,0,0)
+                except ValueError:
+                    rgb = (128,0,0)
+                except Exception as e:
+                    return render_template("error.html", title = e)
+
+                colour = colour_group(rgb)
                 title = get_field(row, book, "title", "").title()
                 subtitle = get_field(row, book, "subtitle", "")
                 year = get_field(row, book, "year", "")
                 authors = get_field(row, book, "authors", "")
                 pageCount = get_field(row, book, "pageCount", "")
-                print(pageCount)
                 description = get_field(row, book, "description", "")
                 db.insert_one({
                     "title": title,
@@ -212,6 +303,7 @@ def importcsv():
                     "author": authors,
                     "cover": cover,
                     "pageCount": pageCount,
+                    "colour": colour,
                     "description":description,
                     "isbn": isbn,
                     })
@@ -220,7 +312,6 @@ def importcsv():
 @app.route("/author", methods=["POST"])
 def author():
     author = request.form.get("authors")
-    print(author)
     books = db.find({"author" : author})
     return render_template("collection.html", books=books, title=f"{author}  Collection")
 
