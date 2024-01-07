@@ -40,7 +40,8 @@
             {% for book in books %}
             <tr>
                 <td style="width:10%;">
-                    <img src={{ book['cover'] }} style="height: 200px;"/>
+                    <img src={{ book['cover'] }} style="height: 200px;"/><br>
+                    {{ book['colour'] }}
                 </td>
                 <td style="width: 30%;" colspan="2">
                     {{ book['title'] }} <br>

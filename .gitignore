@@ -163,3 +163,4 @@ uploads/Books2.csv
 temp_image
 __pycache__/app.cpython-311.pyc
 colour_chart.txt
+.vercel
